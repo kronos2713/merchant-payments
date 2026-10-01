@@ -1,5 +1,6 @@
-package com.florinparaschiv.payments.merchants;
+package com.florinparaschiv.payments.merchants.internal;
 
+import com.florinparaschiv.payments.merchants.MerchantStatus;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -50,13 +51,32 @@ public class Merchant {
     public static Merchant register(String legalName, String registrationCountry,
                                     String registrationNumber, String settlementIban,
                                     Clock clock) {
+        String name = required(legalName, "legalName").strip();
+        if (name.isEmpty() || name.length() > 256) {
+            throw new InvalidMerchantDataException("legalName must be 1 to 256 characters");
+        }
+
+        String iban = required(settlementIban, "settlementIban")
+                .replaceAll("\\s", "").toUpperCase(Locale.ROOT);
+        if (!IbanValidator.isValid(iban)) {
+            throw new InvalidMerchantDataException("settlementIban is not a valid IBAN");
+        }
+
         return new Merchant(
                 UUID.randomUUID(),
-                legalName.strip(),
-                registrationCountry.strip().toUpperCase(Locale.ROOT),
-                registrationNumber.replaceAll("[\\s.]", "").toUpperCase(Locale.ROOT),
-                settlementIban.replaceAll("\\s", "").toUpperCase(Locale.ROOT),
+                name,
+                required(registrationCountry, "registrationCountry").strip().toUpperCase(Locale.ROOT),
+                required(registrationNumber, "registrationNumber")
+                        .replaceAll("[\\s.]", "").toUpperCase(Locale.ROOT),
+                iban,
                 clock.instant());
+    }
+
+    private static String required(String value, String field) {
+        if (value == null) {
+            throw new InvalidMerchantDataException(field + " is required");
+        }
+        return value;
     }
 
     public UUID getId() { return id; }
