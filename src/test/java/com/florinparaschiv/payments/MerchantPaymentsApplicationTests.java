@@ -1,4 +1,4 @@
-package com.florinparaschiv.merchantpayments;
+package com.florinparaschiv.payments;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

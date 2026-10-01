@@ -1,4 +1,4 @@
-package com.florinparaschiv.merchantpayments;
+package com.florinparaschiv.payments;
 
 import org.springframework.boot.SpringApplication;
 
