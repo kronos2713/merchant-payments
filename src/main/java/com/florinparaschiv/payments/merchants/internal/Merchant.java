@@ -56,8 +56,7 @@ public class Merchant {
             throw new InvalidMerchantDataException("legalName must be 1 to 256 characters");
         }
 
-        String iban = required(settlementIban, "settlementIban")
-                .replaceAll("\\s", "").toUpperCase(Locale.ROOT);
+        String iban = IbanValidator.normalise(required(settlementIban, "settlementIban"));
         if (!IbanValidator.isValid(iban)) {
             throw new InvalidMerchantDataException("settlementIban is not a valid IBAN");
         }

@@ -1,9 +1,17 @@
 package com.florinparaschiv.payments.merchants.internal;
 
+import java.util.Locale;
+
 final class IbanValidator {
 
     private IbanValidator() {
     }
+
+    static String normalise(String rawIban) {
+        return rawIban.replaceAll("\\s", "").toUpperCase(Locale.ROOT);
+    }
+
+    /** Expects a normalised IBAN: no spaces, uppercase. */
     static boolean isValid(String iban) {
         if (iban == null || !iban.matches("[A-Z]{2}[0-9]{2}[A-Z0-9]{1,30}")) {
             return false;
