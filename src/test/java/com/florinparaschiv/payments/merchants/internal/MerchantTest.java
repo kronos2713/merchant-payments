@@ -44,4 +44,90 @@ class MerchantTest {
                 .isInstanceOf(InvalidMerchantDataException.class)
                 .hasMessageContaining("legalName");
     }
+
+    @Test
+    void rejectsUnsupportedCountry() {
+        assertThatThrownBy(() -> Merchant.register(
+                "Test BV", "BE", "0123456789", "NL91ABNA0417164300", clock))
+                .isInstanceOf(InvalidMerchantDataException.class)
+                .hasMessageContaining("not supported");
+    }
+
+    @Test
+    void rejectsWrongDutchRegistrationNumber() {
+        assertThatThrownBy(() -> Merchant.register(
+                "Test BV", "NL", "1234567", "NL91ABNA0417164300", clock))
+                .isInstanceOf(InvalidMerchantDataException.class)
+                .hasMessageContaining("registrationNumber");
+    }
+
+    private final Clock later =
+            Clock.fixed(Instant.parse("2026-10-02T09:00:00Z"), ZoneOffset.UTC);
+
+    private Merchant newMerchant() {
+        return Merchant.register("Test BV", "NL", "12345678", "NL91ABNA0417164300", clock);
+    }
+
+    @Test
+    void activatesPendingMerchant() {
+        Merchant merchant = newMerchant();
+
+        merchant.activate(later);
+
+        assertThat(merchant.getStatus()).isEqualTo(MerchantStatus.ACTIVE);
+        assertThat(merchant.getUpdatedAt()).isEqualTo(later.instant());
+        assertThat(merchant.getCreatedAt()).isEqualTo(clock.instant());
+    }
+
+    @Test
+    void activatingActiveMerchantChangesNothing() {
+        Merchant merchant = newMerchant();
+        merchant.activate(clock);
+
+        merchant.activate(later);
+
+        assertThat(merchant.getStatus()).isEqualTo(MerchantStatus.ACTIVE);
+        assertThat(merchant.getUpdatedAt()).isEqualTo(clock.instant());
+    }
+
+    @Test
+    void suspendsAndReactivates() {
+        Merchant merchant = newMerchant();
+        merchant.activate(clock);
+
+        merchant.suspend(clock);
+        assertThat(merchant.getStatus()).isEqualTo(MerchantStatus.SUSPENDED);
+
+        merchant.reactivate(later);
+        assertThat(merchant.getStatus()).isEqualTo(MerchantStatus.ACTIVE);
+        assertThat(merchant.getUpdatedAt()).isEqualTo(later.instant());
+    }
+
+    @Test
+    void cannotSuspendPendingMerchant() {
+        Merchant merchant = newMerchant();
+
+        assertThatThrownBy(() -> merchant.suspend(clock))
+                .isInstanceOf(IllegalMerchantTransitionException.class)
+                .hasMessageContaining("PENDING");
+    }
+
+    @Test
+    void cannotReactivatePendingMerchant() {
+        Merchant merchant = newMerchant();
+
+        assertThatThrownBy(() -> merchant.reactivate(clock))
+                .isInstanceOf(IllegalMerchantTransitionException.class);
+    }
+
+    @Test
+    void cannotActivateSuspendedMerchant() {
+        Merchant merchant = newMerchant();
+        merchant.activate(clock);
+        merchant.suspend(clock);
+
+        assertThatThrownBy(() -> merchant.activate(clock))
+                .isInstanceOf(IllegalMerchantTransitionException.class)
+                .hasMessageContaining("SUSPENDED");
+    }
 }

@@ -62,14 +62,21 @@ public class Merchant {
             throw new InvalidMerchantDataException("settlementIban is not a valid IBAN");
         }
 
-        return new Merchant(
-                UUID.randomUUID(),
-                name,
-                required(registrationCountry, "registrationCountry").strip().toUpperCase(Locale.ROOT),
-                required(registrationNumber, "registrationNumber")
-                        .replaceAll("[\\s.]", "").toUpperCase(Locale.ROOT),
-                iban,
-                clock.instant());
+        String country = required(registrationCountry, "registrationCountry")
+                .strip().toUpperCase(Locale.ROOT);
+        if (!RegistrationRules.isSupportedCountry(country)) {
+            throw new InvalidMerchantDataException(
+                    "registrationCountry " + country + " is not supported yet");
+        }
+
+        String number = required(registrationNumber, "registrationNumber")
+                .replaceAll("[\\s.]", "").toUpperCase(Locale.ROOT);
+        if (!RegistrationRules.isValidNumber(country, number)) {
+            throw new InvalidMerchantDataException(
+                    "registrationNumber has an invalid format for " + country);
+        }
+
+        return new Merchant(UUID.randomUUID(), name, country, number, iban, clock.instant());
     }
 
     private static String required(String value, String field) {
@@ -77,6 +84,41 @@ public class Merchant {
             throw new InvalidMerchantDataException(field + " is required");
         }
         return value;
+    }
+
+    public void activate(Clock clock) {
+        if (status == MerchantStatus.ACTIVE) {
+            return;
+        }
+        if (status != MerchantStatus.PENDING) {
+            throw new IllegalMerchantTransitionException("activate", status);
+        }
+        changeStatus(MerchantStatus.ACTIVE, clock);
+    }
+
+    public void suspend(Clock clock) {
+        if (status == MerchantStatus.SUSPENDED) {
+            return;
+        }
+        if (status != MerchantStatus.ACTIVE) {
+            throw new IllegalMerchantTransitionException("suspend", status);
+        }
+        changeStatus(MerchantStatus.SUSPENDED, clock);
+    }
+
+    public void reactivate(Clock clock) {
+        if (status == MerchantStatus.ACTIVE) {
+            return;
+        }
+        if (status != MerchantStatus.SUSPENDED) {
+            throw new IllegalMerchantTransitionException("reactivate", status);
+        }
+        changeStatus(MerchantStatus.ACTIVE, clock);
+    }
+
+    private void changeStatus(MerchantStatus newStatus, Clock clock) {
+        this.status = newStatus;
+        this.updatedAt = clock.instant();
     }
 
     public UUID getId() { return id; }
