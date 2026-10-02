@@ -7,6 +7,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.hibernate.exception.ConstraintViolationException;
+import org.springframework.dao.DataIntegrityViolationException;
 
 @Service
 class MerchantService {
@@ -30,7 +32,15 @@ class MerchantService {
                 request.registrationNumber(),
                 request.settlementIban(),
                 clock);
-        repository.save(merchant);
+        try {
+            repository.saveAndFlush(merchant);
+        } catch (DataIntegrityViolationException ex) {
+            if (isUniqueViolation(ex, "uq_merchants_registration")) {
+                throw new MerchantAlreadyRegisteredException(
+                        merchant.getRegistrationCountry(), merchant.getRegistrationNumber());
+            }
+            throw ex;
+        }
         return MerchantResponse.from(merchant);
     }
 
@@ -69,5 +79,14 @@ class MerchantService {
     private Merchant load(UUID merchantId) {
         return repository.findById(merchantId)
                 .orElseThrow(() -> new MerchantNotFoundException(merchantId));
+    }
+
+    private static boolean isUniqueViolation(Throwable ex, String constraintName) {
+        for (Throwable cause = ex; cause != null; cause = cause.getCause()) {
+            if (cause instanceof ConstraintViolationException violation) {
+                return constraintName.equalsIgnoreCase(violation.getConstraintName());
+            }
+        }
+        return false;
     }
 }
