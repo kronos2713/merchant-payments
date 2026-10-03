@@ -11,3 +11,9 @@ management:
     web:
       exposure:
         include: health,info
+payments:
+  payment-requests:
+    expiry:
+      min: 5m
+      max: 30d
+      default-ttl: 24h
