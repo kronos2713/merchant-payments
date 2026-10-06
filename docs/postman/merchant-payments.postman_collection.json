@@ -1,0 +1,687 @@
+{
+	"info": {
+		"_postman_id": "f3aacec7-ffbb-4a48-aa14-775ee8133027",
+		"name": "merchant-payments",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "20353966"
+	},
+	"item": [
+		{
+			"name": "Health",
+			"item": [
+				{
+					"name": "Health check",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"  pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+									"  pm.test(\"app is UP\", () => pm.expect(pm.response.json().status).to.eql(\"UP\"));"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/actuator/health",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"actuator",
+								"health"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Merchants",
+			"item": [
+				{
+					"name": "Register a merchant",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set(\"registrationNumber\",",
+									"    String(Math.floor(Math.random() * 1e8)).padStart(8, \"0\"));"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"201 Created\", () => pm.response.to.have.status(201));",
+									"pm.collectionVariables.set(\"merchantId\", pm.response.json().id);"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"legalName\": \"Postman BV\",\n  \"registrationCountry\": \"NL\",\n  \"registrationNumber\": \"{{registrationNumber}}\",\n  \"settlementIban\": \"NL91 ABNA 0417 1643 00\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/merchants",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"merchants"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Activate a merchant",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"   pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+									"   pm.test(\"merchant is ACTIVE\", () => pm.expect(pm.response.json().status).to.eql(\"ACTIVE\"));"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/merchants/{{merchantId}}/activation",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"merchants",
+								"{{merchantId}}",
+								"activation"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get a merchant",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"   pm.test(\"200 OK\", () => pm.response.to.have.status(200));"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/merchants/{{merchantId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"merchants",
+								"{{merchantId}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Payment requests",
+			"item": [
+				{
+					"name": "Create a payment request",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"   pm.collectionVariables.set(\"merchantReference\", \"ORDER-\" + Date.now());"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"   pm.test(\"201 Created\", () => pm.response.to.have.status(201));",
+									"   pm.test(\"status is CREATED\", () => pm.expect(pm.response.json().status).to.eql(\"CREATED\"));",
+									"   pm.collectionVariables.set(\"paymentRequestId\", pm.response.json().id);"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "   {\n     \"amountMinor\": 1250,\n     \"currency\": \"EUR\",\n     \"description\": \"Order from Postman\",\n     \"merchantReference\": \"{{merchantReference}}\"\n   }",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/merchants/{{merchantId}}/payment-requests",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"merchants",
+								"{{merchantId}}",
+								"payment-requests"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get a payment request",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"   pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+									"   pm.test(\"same merchant reference\", () =>",
+									"       pm.expect(pm.response.json().merchantReference).to.eql(pm.collectionVariables.get(\"merchantReference\")));"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/merchants/{{merchantId}}/payment-requests/{{paymentRequestId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"merchants",
+								"{{merchantId}}",
+								"payment-requests",
+								"{{paymentRequestId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List payment requests",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+									"pm.test(\"contains the new request\", () =>",
+									"    pm.expect(pm.response.text()).to.include(pm.collectionVariables.get(\"paymentRequestId\")));"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/merchants/{{merchantId}}/payment-requests",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"merchants",
+								"{{merchantId}}",
+								"payment-requests"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List open payment requests",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+									"pm.test(\"contains the new request\", () =>",
+									"    pm.expect(pm.response.text()).to.include(pm.collectionVariables.get(\"paymentRequestId\")));",
+									"pm.test(\"only open requests\", () => pm.expect(pm.response.text()).to.not.include('\"PAID\"'));"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/merchants/{{merchantId}}/payment-requests?status=CREATED",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"merchants",
+								"{{merchantId}}",
+								"payment-requests"
+							],
+							"query": [
+								{
+									"key": "status",
+									"value": "CREATED"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Payments",
+			"item": [
+				{
+					"name": "Pay a payment request",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+									"pm.test(\"status is PAID\", () => pm.expect(pm.response.json().status).to.eql(\"PAID\"));",
+									"pm.test(\"payer view hides merchant details\", () => {",
+									"    pm.expect(pm.response.json()).to.not.have.property(\"merchantId\");",
+									"    pm.expect(pm.response.json()).to.not.have.property(\"merchantReference\");",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/payment-requests/{{paymentRequestId}}/payment",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"payment-requests",
+								"{{paymentRequestId}}",
+								"payment"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List paid payment requests",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+									"pm.test(\"the paid request moved here\", () =>",
+									"    pm.expect(pm.response.text()).to.include(pm.collectionVariables.get(\"paymentRequestId\")));"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/merchants/{{merchantId}}/payment-requests?status=PAID",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"merchants",
+								"{{merchantId}}",
+								"payment-requests"
+							],
+							"query": [
+								{
+									"key": "status",
+									"value": "PAID"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Errors",
+			"item": [
+				{
+					"name": "Get as another merchant (404)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"404 Not Found\", () => pm.response.to.have.status(404));"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/merchants/00000000-0000-0000-0000-000000000001/payment-requests/{{paymentRequestId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"merchants",
+								"00000000-0000-0000-0000-000000000001",
+								"payment-requests",
+								"{{paymentRequestId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Cancel a paid request (409)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"409 Conflict\", () => pm.response.to.have.status(409));"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/merchants/{{merchantId}}/payment-requests/{{paymentRequestId}}/cancellation",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"merchants",
+								"{{merchantId}}",
+								"payment-requests",
+								"{{paymentRequestId}}",
+								"cancellation"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create with expiry in the past (400)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"400 Bad Request\", () => pm.response.to.have.status(400));",
+									"pm.test(\"explains the expiry rule\", () => pm.expect(pm.response.json().detail).to.include(\"expiresAt\"));"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"amountMinor\": 500,\n  \"currency\": \"EUR\",\n  \"description\": \"Expired before it starts\",\n  \"merchantReference\": \"ORDER-PAST\",\n  \"expiresAt\": \"2020-01-01T00:00:00Z\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/merchants/{{merchantId}}/payment-requests",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"merchants",
+								"{{merchantId}}",
+								"payment-requests"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Pay an already paid request (409)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"409 Conflict\", () => pm.response.to.have.status(409));"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/payment-requests/{{paymentRequestId}}/payment",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"payment-requests",
+								"{{paymentRequestId}}",
+								"payment"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List with unknown status (400)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"400 Bad Request\", () => pm.response.to.have.status(400));"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/merchants/{{merchantId}}/payment-requests?status=FOO",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"merchants",
+								"{{merchantId}}",
+								"payment-requests"
+							],
+							"query": [
+								{
+									"key": "status",
+									"value": "FOO"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List with oversized page (400)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"400 Bad Request\", () => pm.response.to.have.status(400));"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/merchants/{{merchantId}}/payment-requests?size=101",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"merchants",
+								"{{merchantId}}",
+								"payment-requests"
+							],
+							"query": [
+								{
+									"key": "size",
+									"value": "101"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080"
+		},
+		{
+			"key": "merchantId",
+			"value": ""
+		},
+		{
+			"key": "paymentRequestId",
+			"value": ""
+		},
+		{
+			"key": "registrationNumber",
+			"value": ""
+		},
+		{
+			"key": "merchantReference",
+			"value": ""
+		}
+	]
+}
