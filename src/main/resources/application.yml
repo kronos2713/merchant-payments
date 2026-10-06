@@ -17,3 +17,5 @@ payments:
       min: 5m
       max: 30d
       default-ttl: 24h
+springdoc:
+  override-with-generic-response: false

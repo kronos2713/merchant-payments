@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -13,10 +14,11 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.endsWith;
-import static org.mockito.ArgumentMatchers.any;
+import static org.hamcrest.Matchers.hasItem;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -64,6 +66,8 @@ class PaymentRequestControllerTest {
                 "ORDER-1001", null, POLICY, FIXED);
     }
 
+    // ---- create ----
+
     @Test
     void createReturns201WithLocation() throws Exception {
         PaymentRequest created = request();
@@ -103,6 +107,8 @@ class PaymentRequestControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
+    // ---- get ----
+
     @Test
     void getReturnsRequest() throws Exception {
         PaymentRequest existing = request();
@@ -112,6 +118,40 @@ class PaymentRequestControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.merchantReference").value("ORDER-1001"));
     }
+
+    // ---- list ----
+
+    @Test
+    void listPassesFiltersAndReturnsPage() throws Exception {
+        when(service.list(eq(MERCHANT_ID), eq(PaymentRequestStatus.CREATED), isNull(),
+                eq(0), eq(20), eq(NOW)))
+                .thenReturn(new PageImpl<>(List.of(request())));
+
+        mockMvc.perform(get("/merchants/{merchantId}/payment-requests", MERCHANT_ID)
+                        .param("status", "CREATED"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$..merchantReference", hasItem("ORDER-1001")));
+    }
+
+    @Test
+    void listRejectsUnknownStatus() throws Exception {
+        mockMvc.perform(get("/merchants/{merchantId}/payment-requests", MERCHANT_ID)
+                        .param("status", "FOO"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(service);
+    }
+
+    @Test
+    void listRejectsOversizedPage() throws Exception {
+        mockMvc.perform(get("/merchants/{merchantId}/payment-requests", MERCHANT_ID)
+                        .param("size", "101"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(service);
+    }
+
+    // ---- cancel ----
 
     @Test
     void cancelReturnsCancelledRequest() throws Exception {
@@ -124,6 +164,8 @@ class PaymentRequestControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("CANCELLED"));
     }
+
+    // ---- pay ----
 
     @Test
     void payReturnsPayerViewWithoutMerchantDetails() throws Exception {
