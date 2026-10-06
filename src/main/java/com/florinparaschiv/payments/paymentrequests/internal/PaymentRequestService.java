@@ -4,10 +4,10 @@ import com.florinparaschiv.payments.merchants.MerchantDirectory;
 import com.florinparaschiv.payments.merchants.MerchantStatus;
 import com.florinparaschiv.payments.merchants.MerchantSummary;
 import com.florinparaschiv.payments.shared.Money;
-import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.florinparaschiv.payments.shared.ConstraintViolations;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -45,7 +45,7 @@ class PaymentRequestService {
         try {
             return repository.saveAndFlush(request);
         } catch (DataIntegrityViolationException e) {
-            if (violates(e, UNIQUE_MERCHANT_REFERENCE)) {
+            if (ConstraintViolations.isViolationOf(e, UNIQUE_MERCHANT_REFERENCE)) {
                 throw new PaymentRequestAlreadyExistsException(merchantReference);
             }
             throw e;
@@ -87,8 +87,5 @@ class PaymentRequestService {
                 .orElseThrow(() -> new PaymentRequestNotFoundException(id));
     }
 
-    private static boolean violates(DataIntegrityViolationException e, String constraintName) {
-        return e.getCause() instanceof ConstraintViolationException cve
-                && constraintName.equalsIgnoreCase(cve.getConstraintName());
-    }
+
 }
