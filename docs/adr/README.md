@@ -21,3 +21,4 @@ with an AI assistant and reviewed and approved by me.
 | [0010](0010-payment-request-lifecycle-rules.md) | Define the payment request lifecycle rules | Accepted |
 | [0011](0011-routes-split-by-caller.md) | Split the payment request routes by caller | Accepted |
 | [0012](0012-list-endpoint-semantics.md) | Filter the payment request list by logical status | Accepted |
+| [0013](0013-multi-stage-dockerfile.md) | Build the application image with a multi-stage Dockerfile | Accepted |
