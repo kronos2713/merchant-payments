@@ -3,6 +3,7 @@
 Date: 2026-10-11
 Recorded retrospectively; decided 2026-10-02.
 Status: Accepted
+Amended 2026-10-11: described what the mod-97 check does and doesn't prove, and removed two unsupported claims about how often errors occur.
 
 ## Context
 
@@ -40,9 +41,10 @@ The IBAN is not unique: companies in one group can share a treasury account.
 - **A mask that keeps the real length.** Shows more than needed. A fixed mask
   with the country, check digits and the last four characters is enough to
   recognise the account.
-- **A regex check only.** Catches the wrong shape, but not a mistyped digit.
-  Mod-97 catches almost every single typo, and a wrong IBAN means money sent to
-  the wrong account.
+- **A regex check only.** Catches the wrong shape, but not a mistyped digit
+  that keeps the shape. The mod-97 check verifies the IBAN's own check digits.
+  It doesn't prove that the account exists, but a wrong IBAN means money sent
+  to the wrong account, so the check is worth having.
 - **An IBAN library such as iban4j.** It would also check each country's exact
   length. One small class was enough for the MVP, without a dependency.
 
@@ -52,7 +54,8 @@ The IBAN is not unique: companies in one group can share a treasury account.
   characters, not read it back.
 - The check is generic: it doesn't know that a Dutch IBAN has exactly 18
   characters. An IBAN with the wrong length for its country but valid check
-  digits would be accepted. That is rare, and acceptable for the MVP.
+  digits would be accepted. That is acceptable for the MVP, and country-specific
+  checks are on the post-MVP hardening list.
 - The IBAN is stored in plain text in `merchants.settlement_iban`. Encrypting it
   at rest is on the post-MVP hardening list.
 - There is no endpoint to change the IBAN yet. When it comes, it needs strong

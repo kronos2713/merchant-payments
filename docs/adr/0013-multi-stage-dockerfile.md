@@ -3,6 +3,7 @@
 Date: 2026-10-11
 Recorded retrospectively; decided 2026-10-06.
 Status: Accepted
+Amended 2026-10-11: corrected what layer caching saves on a code change, and described the configuration options of buildpacks fairly.
 
 ## Context
 
@@ -25,8 +26,11 @@ A multi-stage `Dockerfile` in the repository root:
 - **Layered jar.** The jar is copied to a fixed name, `application.jar`, and
   split with Spring Boot's `-Djarmode=tools ... extract --layers` into
   dependencies, loader, snapshot dependencies and application. When only my code
-  changes, Docker rebuilds only the last, small layer. The fixed name keeps the
-  entry point independent of the version in `pom.xml`.
+  changes, the build stage still recompiles and re-extracts the jar, but the
+  runtime image reuses every layer whose content is unchanged. Only the small
+  application layer is new, so pushing or pulling the new image moves little
+  data. The fixed name keeps the entry point independent of the version in
+  `pom.xml`.
 - **Runtime stage** on `eclipse-temurin:25-jre`: no JDK, no Maven, no source
   code. It runs as a non-root `app` user, with `-XX:MaxRAMPercentage=75.0` so the
   heap is sized from the container's memory limit and leaves room for non-heap
@@ -42,8 +46,10 @@ whole system starts with:
 ### Alternatives considered
 
 - **Spring Boot buildpacks** (`spring-boot:build-image`). No Dockerfile to
-  maintain, but little control over the base image, the user or the JVM flags,
-  and it teaches little about how an image is built.
+  maintain, and it can be configured: the builder and run image, the JVM
+  version, and JVM options through environment variables. But that
+  configuration lives in the build plugin and the buildpack's own conventions,
+  and writing the Dockerfile myself teaches more about how an image is built.
 - **Jib.** Fast, doesn't need Docker to build, and layers automatically, but it
   only works for JVM projects and moves the image definition into plugin
   configuration.
@@ -57,7 +63,8 @@ Kubernetes later.
 ## Consequences
 
 - Anyone with Docker can run the full system without a local JDK.
-- Rebuilds after a code change only replace the application layer.
+- After a code change, the build stage runs again, but the runtime image only
+  gets a new application layer; the dependency layers are reused.
 - The image is about 600 MB, more than I first expected. Most of it is the JRE
   and the Ubuntu base. A distroless or `jlink` runtime is on the post-MVP
   hardening list.

@@ -5,6 +5,9 @@ payment requests, and payers pay them. It is a portfolio project in which I
 designed the schema, the API and the module boundaries from scratch, and
 recorded every significant decision.
 
+Payment confirmation is simulated: paying a request changes its status, but no
+bank or payment provider is involved and no money moves.
+
 **Java 25 · Spring Boot 4.1 · Spring Modulith · PostgreSQL 17 · Flyway · Testcontainers · Docker · GitHub Actions**
 
 [![CI](https://github.com/kronos2713/merchant-payments/actions/workflows/ci.yml/badge.svg)](https://github.com/kronos2713/merchant-payments/actions/workflows/ci.yml)
@@ -47,7 +50,8 @@ Testcontainers. CI runs the same command on every push.
 | --- | --- | --- |
 | Domain unit tests | Entity rules and boundaries, with a fixed clock | `MerchantTest`, `PaymentRequestTest`, `MoneyTest`, `IbanValidatorTest` |
 | Persistence tests | Mappings, migrations and constraints against real PostgreSQL | `MerchantPersistenceIntegrationTest`, `PaymentRequestPersistenceIntegrationTest` |
-| Service integration tests | Transactions, optimistic locking, duplicate detection, list filters | `MerchantServiceIntegrationTest`, `PaymentRequestServiceIntegrationTest` |
+| Service integration tests | Transactions, duplicate detection, list filters, the order of payment checks | `MerchantServiceIntegrationTest`, `PaymentRequestServiceIntegrationTest` |
+| Concurrency test | Two transactions pay the same request: the first commits, the second is refused by the version check | `PaymentRequestOptimisticLockingIntegrationTest` |
 | Web layer tests | Status codes, validation and Problem Details responses | `MerchantControllerTest`, `PaymentRequestControllerTest`, `MerchantApiErrorsIntegrationTest` |
 | Architecture test | No module reaches into another module's internals | `ModularityTests` |
 
@@ -81,7 +85,7 @@ means 12.50 EUR.
 
 | Method | Path | What it does |
 | --- | --- | --- |
-| `POST` | `/payment-requests/{id}/payment` | Pay a payment request |
+| `POST` | `/payment-requests/{id}/payment` | Pay a payment request (simulated confirmation) |
 
 ## Architecture
 
@@ -129,10 +133,11 @@ Each decision has an Architecture Decision Record in [`docs/adr`](docs/adr).
 
 ## Known limitations
 
-These are deliberate MVP shortcuts, each with a planned safer version.
+These are deliberate MVP shortcuts. Each has a safer version planned or noted.
 
 | Limitation | Planned fix |
 | --- | --- |
+| Payment confirmation is simulated; no bank or payment provider is involved | A real confirmation from a payment provider, with signature checks and replay protection (not yet on the roadmap) |
 | No authentication; the `merchantId` in the path is trusted | OAuth2 with Keycloak; the merchant comes from the token (Phase 3) |
 | Paying an already paid request returns 409, also for a retry | Idempotency keys for payments (Phase 2) |
 | A duplicate `merchantReference` returns 409 | Idempotent create: the same payload returns the existing request |
@@ -140,6 +145,7 @@ These are deliberate MVP shortcuts, each with a planned safer version.
 | Expired requests keep the stored status CREATED | A scheduled sweep that stores EXPIRED |
 | No history of merchant status changes | An audit log with actor and reason |
 | The settlement IBAN is stored in plain text | Encryption at rest |
+| IBAN validation checks the shape and mod-97, not each country's exact length | Country-specific length checks or an IBAN library |
 | The payer can't view a request before paying it | `GET /payment-requests/{id}` with a minimal response |
 | Offset paging without a covering index | A `(merchant_id, created_at, id)` index; cursor paging if needed |
 | UUID v4 ids spread inserts across the index | UUID v7 for `payment_requests` |
@@ -162,20 +168,4 @@ Planned, not built yet:
 | Technology | Why it is here |
 | --- | --- |
 | Java 25 | The current LTS release |
-| Spring Boot 4.1 | The standard for Java backends; Problem Details and Docker Compose support built in |
-| Spring Modulith 2.1 | Module boundaries that are verified, not just agreed |
-| Spring Data JPA / Hibernate | Entities with optimistic locking; Specifications for optional filters |
-| PostgreSQL 17 | Check constraints, `timestamptz`, a realistic production database |
-| Flyway | Versioned plain SQL migrations, reviewed like code |
-| Bean Validation | Request validation with field-level errors, including a custom `@ValidIban` |
-| springdoc-openapi 3 | Swagger UI and an OpenAPI description generated from the code |
-| Testcontainers | Integration tests against real PostgreSQL, locally and in CI |
-| Docker, Docker Compose | The whole system runs with one command |
-| GitHub Actions | `./mvnw verify` on every push |
-
-## How this was built
-
-The design decisions are mine, made in design sessions with an AI assistant.
-The code was built step by step in those sessions, and every change was
-reviewed and committed by me. The ADRs and this README are drafted with the
-assistant and approved by me.
+| Spring Boot 4.1 | The standard for Java backends; Problem
