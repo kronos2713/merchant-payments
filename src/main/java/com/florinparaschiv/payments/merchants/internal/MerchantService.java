@@ -1,17 +1,19 @@
 package com.florinparaschiv.payments.merchants.internal;
 
+import com.florinparaschiv.payments.shared.ConstraintViolations;
 import java.time.Clock;
 import java.util.UUID;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.hibernate.exception.ConstraintViolationException;
-import org.springframework.dao.DataIntegrityViolationException;
 
 @Service
 class MerchantService {
+
+    static final String UNIQUE_REGISTRATION = "uq_merchants_registration";
 
     private static final Sort NEWEST_FIRST =
             Sort.by(Sort.Order.desc("createdAt"), Sort.Order.asc("id"));
@@ -35,7 +37,7 @@ class MerchantService {
         try {
             repository.saveAndFlush(merchant);
         } catch (DataIntegrityViolationException ex) {
-            if (isUniqueViolation(ex, "uq_merchants_registration")) {
+            if (ConstraintViolations.isViolationOf(ex, UNIQUE_REGISTRATION)) {
                 throw new MerchantAlreadyRegisteredException(
                         merchant.getRegistrationCountry(), merchant.getRegistrationNumber());
             }
@@ -79,14 +81,5 @@ class MerchantService {
     private Merchant load(UUID merchantId) {
         return repository.findById(merchantId)
                 .orElseThrow(() -> new MerchantNotFoundException(merchantId));
-    }
-
-    private static boolean isUniqueViolation(Throwable ex, String constraintName) {
-        for (Throwable cause = ex; cause != null; cause = cause.getCause()) {
-            if (cause instanceof ConstraintViolationException violation) {
-                return constraintName.equalsIgnoreCase(violation.getConstraintName());
-            }
-        }
-        return false;
     }
 }
