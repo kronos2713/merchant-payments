@@ -33,4 +33,22 @@ class RegisterMerchantRequestTest {
                 .extracting(v -> v.getPropertyPath().toString())
                 .containsExactlyInAnyOrder("legalName", "settlementIban");
     }
+
+    @Test
+    void toStringMasksTheIban() {
+        var request = new RegisterMerchantRequest(
+                "Test BV", "NL", "12345678", "NL91 ABNA 0417 1643 00");
+
+        assertThat(request.toString())
+                .contains("NL91 **** **** **** 4300")
+                .doesNotContain("ABNA0417164300")
+                .doesNotContain("ABNA 0417 1643 00");
+    }
+
+    @Test
+    void toStringDoesNotFailWithoutIban() {
+        var request = new RegisterMerchantRequest("Test BV", "NL", "12345678", null);
+
+        assertThat(request.toString()).contains("settlementIban=null");
+    }
 }

@@ -8,4 +8,15 @@ record RegisterMerchantRequest(
         @NotBlank @Size(max = 2) String registrationCountry,
         @NotBlank @Size(max = 64) String registrationNumber,
         @NotBlank @ValidIban String settlementIban) {
+
+    @Override
+    public String toString() {
+        String maskedIban = settlementIban == null
+                ? "null"
+                : MerchantResponse.mask(IbanValidator.normalise(settlementIban));
+        return "RegisterMerchantRequest[legalName=" + legalName
+                + ", registrationCountry=" + registrationCountry
+                + ", registrationNumber=" + registrationNumber
+                + ", settlementIban=" + maskedIban + "]";
+    }
 }
