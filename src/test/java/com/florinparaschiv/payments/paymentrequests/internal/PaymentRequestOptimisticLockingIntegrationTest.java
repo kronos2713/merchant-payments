@@ -2,6 +2,7 @@ package com.florinparaschiv.payments.paymentrequests.internal;
 
 import com.florinparaschiv.payments.TestcontainersConfiguration;
 import com.florinparaschiv.payments.shared.Money;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -21,6 +22,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Not @Transactional on purpose: each transaction must really commit for the race to happen.
+ * The test therefore removes its own rows afterwards, so other test classes that delete
+ * merchants don't hit the payment_requests foreign key.
  */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
@@ -41,9 +44,19 @@ class PaymentRequestOptimisticLockingIntegrationTest {
     @Autowired
     private Clock clock;
 
+    private UUID merchantId;
+
+    @AfterEach
+    void removeTestData() {
+        if (merchantId != null) {
+            jdbcTemplate.update("delete from payment_requests where merchant_id = ?", merchantId);
+            jdbcTemplate.update("delete from merchants where id = ?", merchantId);
+        }
+    }
+
     @Test
     void secondOfTwoConcurrentPaymentsIsRejectedByTheVersionCheck() {
-        UUID merchantId = insertActiveMerchant();
+        merchantId = insertActiveMerchant();
         UUID id = service.create(merchantId, Money.eur(1250), "Order", "REF-LOCK-1", null).getId();
 
         TransactionTemplate transactionA = new TransactionTemplate(transactionManager);
