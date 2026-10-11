@@ -16,3 +16,4 @@ with an AI assistant and reviewed and approved by me.
 | [0005](0005-status-transitions-as-action-endpoints.md) | Change merchant status through action endpoints | Accepted |
 | [0006](0006-problem-details-and-database-uniqueness.md) | Report errors as Problem Details and let the database decide uniqueness | Accepted |
 | [0007](0007-injected-clock-at-microsecond-precision.md) | Take all time from one injected clock at microsecond precision | Accepted |
+| [0008](0008-money-as-minor-units-in-shared.md) | Model money as minor units in a shared value object | Accepted |
