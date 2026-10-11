@@ -105,6 +105,34 @@ class PaymentRequestServiceIntegrationTest {
                 .hasMessageContaining("cannot be paid at the moment");
     }
 
+    @Test
+    void repeatPaymentSaysAlreadyPaidEvenWhenMerchantSuspended() {
+        UUID merchantId = insertMerchant("ACTIVE");
+        UUID id = service.create(merchantId, Money.eur(1250), "Order", "REF-1", null).getId();
+        service.pay(id);
+        entityManager.flush();
+        jdbcTemplate.update("update merchants set status = 'SUSPENDED' where id = ?", merchantId);
+        entityManager.clear();
+
+        assertThatThrownBy(() -> service.pay(id))
+                .isInstanceOf(PaymentRequestConflictException.class)
+                .hasMessageContaining("already been paid");
+    }
+
+    @Test
+    void payingCancelledRequestSaysCancelledEvenWhenMerchantSuspended() {
+        UUID merchantId = insertMerchant("ACTIVE");
+        UUID id = service.create(merchantId, Money.eur(1250), "Order", "REF-1", null).getId();
+        service.cancel(merchantId, id);
+        entityManager.flush();
+        jdbcTemplate.update("update merchants set status = 'SUSPENDED' where id = ?", merchantId);
+        entityManager.clear();
+
+        assertThatThrownBy(() -> service.pay(id))
+                .isInstanceOf(PaymentRequestConflictException.class)
+                .hasMessageContaining("was cancelled");
+    }
+
     // ---- cancel ----
 
     @Test

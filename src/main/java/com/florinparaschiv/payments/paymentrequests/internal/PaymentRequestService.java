@@ -85,10 +85,10 @@ class PaymentRequestService {
     @Transactional
     public PaymentRequest pay(UUID id) {
         PaymentRequest request = load(id);
-        boolean merchantActive = merchantDirectory.findById(request.getMerchantId())
-                .map(merchant -> merchant.status() == MerchantStatus.ACTIVE)
-                .orElse(false);
-        if (!merchantActive) {
+        // A request in a final state (PAID, CANCELLED, EXPIRED) gets its own answer from the
+        // entity; the merchant only matters while the request could still be paid.
+        if (request.statusAt(clock.instant()) == PaymentRequestStatus.CREATED
+                && !merchantAcceptsPayments(request.getMerchantId())) {
             throw new PaymentRequestConflictException("payment request cannot be paid at the moment");
         }
         request.pay(clock);
@@ -100,6 +100,12 @@ class PaymentRequestService {
         PaymentRequest request = loadForMerchant(merchantId, id);
         request.cancel(clock);
         return request;
+    }
+
+    private boolean merchantAcceptsPayments(UUID merchantId) {
+        return merchantDirectory.findById(merchantId)
+                .map(merchant -> merchant.status() == MerchantStatus.ACTIVE)
+                .orElse(false);
     }
 
     private PaymentRequest load(UUID id) {
