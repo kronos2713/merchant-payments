@@ -30,7 +30,7 @@ public record ExpiryPolicy(
 
     Instant resolve(Instant requestedExpiresAt, Instant now) {
         if (requestedExpiresAt == null) {
-            return now.plus(defaultTtl);
+            return now.plus(defaultTtl).truncatedTo(ChronoUnit.MICROS);
         }
         Instant expiresAt = requestedExpiresAt.truncatedTo(ChronoUnit.MICROS);
         if (expiresAt.isBefore(now.plus(min)) || expiresAt.isAfter(now.plus(max))) {

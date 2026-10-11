@@ -8,6 +8,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.UUID;
+import java.time.temporal.ChronoUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -58,6 +59,39 @@ class PaymentRequestTest {
 
         assertThatThrownBy(() -> create(100, "REF-1", tooLate))
                 .isInstanceOf(InvalidPaymentRequestException.class);
+    }
+
+    @Test
+    void acceptsExpiryExactlyAtMaximum() {
+        Instant atMax = NOW.plus(Duration.ofDays(30));
+
+        assertThat(create(100, "REF-1", atMax).getExpiresAt()).isEqualTo(atMax);
+    }
+
+    @Test
+    void rejectsExpiryOneMicrosecondBelowMinimum() {
+        Instant justTooSoon = NOW.plus(Duration.ofMinutes(5)).minus(1, ChronoUnit.MICROS);
+
+        assertThatThrownBy(() -> create(100, "REF-1", justTooSoon))
+                .isInstanceOf(InvalidPaymentRequestException.class);
+    }
+
+    @Test
+    void rejectsExpiryOneMicrosecondAboveMaximum() {
+        Instant justTooLate = NOW.plus(Duration.ofDays(30)).plus(1, ChronoUnit.MICROS);
+
+        assertThatThrownBy(() -> create(100, "REF-1", justTooLate))
+                .isInstanceOf(InvalidPaymentRequestException.class);
+    }
+
+    @Test
+    void defaultExpiryIsMicrosecondPreciseEvenWithNanosecondClock() {
+        Clock nanoClock = Clock.fixed(NOW.plusNanos(123_456_789), ZoneOffset.UTC);
+
+        PaymentRequest request = PaymentRequest.create(MERCHANT_ID, Money.eur(100), "Order 1001",
+                "REF-1", null, POLICY, nanoClock);
+
+        assertThat(request.getExpiresAt().getNano() % 1_000).isZero();
     }
 
     @Test
