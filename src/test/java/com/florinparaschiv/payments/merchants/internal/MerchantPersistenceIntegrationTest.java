@@ -14,6 +14,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
+import jakarta.persistence.EntityManager;
+import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
@@ -27,6 +29,9 @@ class MerchantPersistenceIntegrationTest {
 
     @Autowired
     private Clock clock;
+
+    @Autowired
+    private EntityManager entityManager;
 
     @BeforeEach
     void cleanDatabase() {
@@ -61,5 +66,21 @@ class MerchantPersistenceIntegrationTest {
         assertThatThrownBy(() -> repository.saveAndFlush(Merchant.register(
                 "Second BV", "NL", "1234 5678", "NL91ABNA0417164300", clock)))
                 .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    @Transactional
+    void equalsMatchesAnUninitialisedProxy() {
+        // deleteAll() in @BeforeEach ran inside this transaction, so its deletes are still queued.
+        // Hibernate flushes inserts before deletes, so send the deletes first.
+        entityManager.flush();
+
+        Merchant merchant = repository.saveAndFlush(Merchant.register(
+                "Test BV", "NL", "12345678", "NL91ABNA0417164300", clock));
+        entityManager.clear();
+
+        Merchant proxy = entityManager.getReference(Merchant.class, merchant.getId());
+
+        assertThat(merchant).isEqualTo(proxy);
     }
 }

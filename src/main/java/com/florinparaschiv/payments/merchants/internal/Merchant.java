@@ -134,7 +134,7 @@ public class Merchant {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof Merchant other)) return false;
-        return id.equals(other.id);
+        return id.equals(other.getId());
     }
 
     @Override
