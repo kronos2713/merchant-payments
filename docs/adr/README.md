@@ -12,3 +12,4 @@ with an AI assistant and reviewed and approved by me.
 | [0001](0001-modular-monolith-with-spring-modulith.md) | Build a modular monolith with Spring Modulith | Accepted |
 | [0002](0002-application-generated-uuid-ids.md) | Generate UUID v4 ids in the application | Accepted |
 | [0003](0003-database-guardrails-owned-by-flyway.md) | Let Flyway own the schema and put guardrails in the database | Accepted |
+| [0004](0004-settlement-iban-is-write-only.md) | Treat the settlement IBAN as write-only | Accepted |
