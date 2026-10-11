@@ -1,6 +1,7 @@
 # 0001. Build a modular monolith with Spring Modulith
 
 Date: 2026-10-11
+Recorded retrospectively; decided 2026-10-01.
 Status: Accepted
 
 ## Context

@@ -1,6 +1,7 @@
 # 0002. Generate UUID v4 ids in the application
 
 Date: 2026-10-11
+Recorded retrospectively; decided 2026-10-01.
 Status: Accepted
 
 ## Context
