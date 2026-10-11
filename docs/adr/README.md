@@ -19,3 +19,4 @@ with an AI assistant and reviewed and approved by me.
 | [0008](0008-money-as-minor-units-in-shared.md) | Model money as minor units in a shared value object | Accepted |
 | [0009](0009-expiry-computed-on-read.md) | Compute expiry when the status is read | Accepted |
 | [0010](0010-payment-request-lifecycle-rules.md) | Define the payment request lifecycle rules | Accepted |
+| [0011](0011-routes-split-by-caller.md) | Split the payment request routes by caller | Accepted |
