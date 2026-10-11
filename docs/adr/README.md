@@ -14,3 +14,4 @@ with an AI assistant and reviewed and approved by me.
 | [0003](0003-database-guardrails-owned-by-flyway.md) | Let Flyway own the schema and put guardrails in the database | Accepted |
 | [0004](0004-settlement-iban-is-write-only.md) | Treat the settlement IBAN as write-only | Accepted |
 | [0005](0005-status-transitions-as-action-endpoints.md) | Change merchant status through action endpoints | Accepted |
+| [0006](0006-problem-details-and-database-uniqueness.md) | Report errors as Problem Details and let the database decide uniqueness | Accepted |
