@@ -7,3 +7,4 @@ record that supersedes the old one.
 | ADR | Title | Status |
 | --- | --- | --- |
 | [0001](0001-modular-monolith-with-spring-modulith.md) | Build a modular monolith with Spring Modulith | Accepted |
+| [0002](0002-application-generated-uuid-ids.md) | Generate UUID v4 ids in the application | Accepted |
